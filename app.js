@@ -1,17 +1,14 @@
 var sys		= require('sys'),
 	fs		= require('fs'),
-	express = require('express'),
 	spawn	= require('child_process').spawn,
-	tail	= spawn('tail', ['-f', 'server.log']);
-
-// var used for \n scanner
-tail.current_line = "";
+	config	= require('./config.js').Config;
 
 // holds user state
 var status = {
 	// stores: {username: {date: 'last login or logout date', online: true}}
 	users: {},
 	usersFile: 'users.json',
+	ircOnline: false,
 	
 	// updates users.json
 	updateData: function () {
@@ -42,24 +39,61 @@ var status = {
 };
 
 // read in current
+status.usersFile = config.dataFile;
 status.loadData();
 
-// web app
-var app = express.createServer();
-	app.get('/', function(req, res) {
-		res.render('index.jade', {
-			locals: {
-				users: status.users,
-				title: 'Jfro\'s Minecraft Server'
-			}
-		});
-		//res.send(JSON.stringify(status.users));
-	});
-	app.listen(3000);
+var tail = spawn('tail', ['-f', config.serverPath + 'server.log']);
+// var used for \n scanner
+tail.current_line = "";
 
-// tail callbacks
+// web app
+if(config.web.enabled)
+{
+	var express = require('express');
+	var app = express.createServer();
+		app.get('/', function(req, res) {
+			res.render('index.jade', {
+				locals: {
+					users: status.users,
+					title: 'Jfro\'s Minecraft Server'
+				}
+			});
+		});
+		app.listen(config.web.port);
+		console.log('Web server listening on port '+config.web.port)
+}
+
+// IRC bot
+if(config.irc.enabled)
+{
+	var irc = require('irc');
+	var ircClient = new irc.Client(config.irc.server, config.irc.nick, {
+	    channels: config.irc.channels,
+	});
+	ircClient.addListener('join', function (channel, nick) {
+		console.log(nick + ' joined '+channel);
+		if(nick == config.irc.nick)
+		{
+			console.log('bringing irc online');
+			status.ircOnline = true;
+		}
+	});
+	ircClient.addListener('message', function(nick, to, text) {
+		if(text == '!users')
+		{
+			var onlineUsers = [];
+			for(user in status.users) {
+				if(user.online)
+					onlineUsers.push(user)
+			}
+			ircClient.say(to, 'online users: ' + sys.inspect(onlineUsers));
+		}
+	});
+}
+
+// tail callbacks, newline for each new line up til \n, matches for login/logouts
 tail.on('newline', function(line) {
-	console.log(line);
+	//console.log(line);
 	var matches = null;
 	if(matches = line.match(/(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s\[INFO\]\s(\w+)\s\[(.*)\]\slogged in/))
 	{
@@ -76,10 +110,13 @@ tail.on('newline', function(line) {
 		else
 		{
 			status.users[username] = {
+				username: username,
 				date: date,
 				online: true
 			};
 		}
+		if(status.ircOnline)
+			ircClient.say('#grminecraft', username + ' logged on');
 		status.updateData();
 	}
 	if(matches = line.match(/(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s\[INFO\]\s(\w+)\slost connection/))
@@ -94,7 +131,8 @@ tail.on('newline', function(line) {
 			user.date = date;
 			user.online = false;
 		}
-		
+		if(status.ircOnline)
+			ircClient.say('#grminecraft', username + ' logged out');
 		status.updateData();
 	}
 });
