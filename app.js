@@ -82,9 +82,10 @@ if(config.irc.enabled)
 		if(text == '!users')
 		{
 			var onlineUsers = [];
-			for(user in status.users) {
+			for(var username in status.users) {
+				var user = status.users[username];
 				if(user.online)
-					onlineUsers.push(user)
+					onlineUsers.push(username);
 			}
 			ircClient.say(to, 'online users: ' + sys.inspect(onlineUsers));
 		}
