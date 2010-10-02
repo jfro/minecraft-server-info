@@ -87,7 +87,7 @@ if(config.irc.enabled)
 				if(user.online)
 					onlineUsers.push(username);
 			}
-			ircClient.say(to, 'online users: ' + sys.inspect(onlineUsers));
+			ircClient.say(to, 'online users: ' + onlineUsers.join(', '));
 		}
 	});
 }
