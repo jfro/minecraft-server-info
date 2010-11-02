@@ -5,12 +5,16 @@ module.exports.Config = {
 	serverPath: './',
 	
 	// where the user status will be saved
-	dataFile: './users.json',
+	database: {
+		host: 'localhost',
+		dbname: 'minecraft'
+	},
+	// dataFile: './users.json',
 	
 	// irc info, will announce people connecting/disconnecting
 	irc: {
-		enabled: true,
-		nick: 'jfro_bot',
+		enabled: false,
+		nick: 'jfrobot_dev',
 		server: 'irc.freenode.net',
 		channels: ['#grminecraft']
 	},

@@ -1,46 +1,118 @@
+// TODO: split components into separate files
+
 var sys		= require('sys'),
 	fs		= require('fs'),
 	spawn	= require('child_process').spawn,
 	config	= require('./config.js').Config;
 
+// database support
+var mongoose = require('mongoose').Mongoose;
+//	db = mongoose.connect('mongodb://localhost/minecraft');
+mongoose.model('User', require('./User').UserModel);
+
 // holds user state
 var status = {
 	// stores: {username: {date: 'last login or logout date', online: true}}
+	db: null,
 	users: {},
-	usersFile: 'users.json',
+	// usersFile: 'users.json',
 	ircOnline: false,
+	userQueue: [],
+	timeout: null,
 	
-	// updates users.json
-	updateData: function () {
-		//console.log('Updating... online: ' + sys.inspect(this.online));
-		//console.log(JSON.stringify(this.users));
-		
-		fs.writeFile(this.usersFile, JSON.stringify(this.users)+"\n", function (err) {
-			if (err) throw err;
-			//console.log('User status file updated');
+	// connects to MongoDB
+	connectDb: function (host, dbname) {
+		this.db = mongoose.connect('mongodb://'+host+'/'+dbname);
+		console.log('Database connected');
+	},
+	
+	queueProcess: function() {
+		if(this.userQueue.length > 0)
+		{
+			console.log('Processing next queue entry... out of ' + this.userQueue.length);
+			var userInfo = this.userQueue.shift();
+			var self = this;
+			var User = this.db.model('User');
+			this.userForUsername(userInfo['username'], function(user) {
+				if(!user)
+				{
+					console.log('Creating new user for ' + userInfo['username']);
+					user = new User();
+					user.username = userInfo['username'];
+					user.paid = false;
+					user.first_seen_date = userInfo['date'];
+					user.time_played = 0;
+				}
+				user.online = userInfo['online'];
+				if(userInfo['online'])
+					user.last_connect_date = userInfo['date'];
+				else
+					user.last_disconnect_date = userInfo['date'];
+				user.save();
+				console.log('User updated, firing queue');
+				self.timeout = setTimeout(self.queueProcess(), 500);
+			});
+		}
+		else
+		{
+			console.log('Queue empty, sleeping');
+			this.timeout = null;
+		}
+		//setTimeout(this.queueProcess(), 500);
+	},
+	
+	userForUsername: function (username, callback) {
+		var User = this.db.model('User');
+		var self = this;
+		User.find({'username': username}).one(function (user) {
+			callback(user);
 		});
 	},
 	
-	// loads users.json
-	loadData: function () {
-		var self = this;
-		fs.stat(self.usersFile, function (err, stats) {
-			if(!err && stats.isFile())
-			{
-				console.log(self.usersFile + ' exists, loading');
-				fs.readFile(self.usersFile, function (err, data) {
-					if (err) throw err;
-					this.users = JSON.parse(data);
-					//console.log('User data loaded');
-				});
-			}
-		});
-	}
+	userSignedOn: function (username, date) {
+		this.userQueue.push({'username': username, 'online': true, 'date': new Date(date)});
+		if(!this.timeout)
+			this.timeout = setTimeout(this.queueProcess(), 500);
+	},
+	
+	userSignedOff: function (username, date) {
+		this.userQueue.push({'username': username, 'online': false, 'date': new Date(date)});
+		if(!this.timeout)
+			this.timeout = setTimeout(this.queueProcess(), 500);
+	},
+	
+	// updates users.json
+	// updateData: function () {
+	// 	//console.log('Updating... online: ' + sys.inspect(this.online));
+	// 	//console.log(JSON.stringify(this.users));
+	// 	
+	// 	fs.writeFile(this.usersFile, JSON.stringify(this.users)+"\n", function (err) {
+	// 		if (err) throw err;
+	// 		//console.log('User status file updated');
+	// 	});
+	// },
+	// 
+	// // loads users.json
+	// loadData: function () {
+	// 	var self = this;
+	// 	fs.stat(self.usersFile, function (err, stats) {
+	// 		if(!err && stats.isFile())
+	// 		{
+	// 			console.log(self.usersFile + ' exists, loading');
+	// 			fs.readFile(self.usersFile, function (err, data) {
+	// 				if (err) throw err;
+	// 				this.users = JSON.parse(data);
+	// 				console.log('User data loaded');
+	// 			});
+	// 		}
+	// 	});
+	// }
 };
 
 // read in current
-status.usersFile = config.dataFile;
-status.loadData();
+//status.usersFile = config.dataFile;
+//status.loadData();
+status.connectDb(config.database.host, config.database.dbname);
 
 var tail = spawn('tail', ['-f', config.serverPath + 'server.log']);
 // var used for \n scanner
@@ -52,11 +124,14 @@ if(config.web.enabled)
 	var express = require('express');
 	var app = express.createServer();
 		app.get('/', function(req, res) {
-			res.render('index.jade', {
-				locals: {
-					users: status.users,
-					title: 'Jfro\'s Minecraft Server'
-				}
+			var User = status.db.model('User');
+			User.find({}).all(function (users) {
+				res.render('index.jade', {
+					locals: {
+						users: users,
+						title: 'Jfro\'s Minecraft Server'
+					}
+				});
 			});
 		});
 		app.listen(config.web.port);
@@ -102,23 +177,11 @@ tail.on('newline', function(line) {
 			username = matches[2];
 		
 		// update our state to show user is online and not offline
-		var user = status.users[username];
-		if(user)
-		{
-			user.date = date;
-			user.online = true;
-		}
-		else
-		{
-			status.users[username] = {
-				username: username,
-				date: date,
-				online: true
-			};
-		}
+		status.userSignedOff(username, date);
+		
 		if(status.ircOnline)
 			ircClient.say('#grminecraft', username + ' logged on');
-		status.updateData();
+		//status.updateData();
 	}
 	if(matches = line.match(/(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s\[INFO\]\s(\w+)\slost connection/))
 	{
@@ -126,15 +189,11 @@ tail.on('newline', function(line) {
 			username = matches[2];
 			
 		// update user status as offline
-		var user = status.users[username];
-		if(user)
-		{
-			user.date = date;
-			user.online = false;
-		}
+		status.userSignedOn(username, date);
+		
 		if(status.ircOnline)
 			ircClient.say('#grminecraft', username + ' logged out');
-		status.updateData();
+		//status.updateData();
 	}
 });
 
