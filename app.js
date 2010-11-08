@@ -5,7 +5,8 @@ var sys		= require('sys'),
 	spawn	= require('child_process').spawn,
 	config	= require('./config'),
 	path    = require('path'),
-	monitor = require('./monitor');
+	ServerMonitor = require('./server-monitor'),
+	LogMonitor = require('./log-monitor');
 
 // database support
 var mongoose = require('mongoose').Mongoose;
@@ -94,9 +95,25 @@ var status = {
 
 status.connectDb(config.database.host, config.database.dbname);
 
-var tail = spawn('tail', ['-f', path.join(config.serverPath, 'server.log')]);
-// var used for \n scanner
-tail.current_line = "";
+// setup log monitor
+var logMonitor = new LogMonitor(path.join(config.serverPath, 'server.log'));
+logMonitor.on('signon', function (username, date) {
+	status.userSignedOn(username, date);
+	
+	if(status.ircOnline)
+		ircClient.say(config.irc.channels, username + ' logged on');
+});
+logMonitor.on('signoff', function (username, date) {
+	status.userSignedOff(username, date);
+	
+	if(status.ircOnline)
+		ircClient.say(config.irc.channels, username + ' logged off');
+});
+logMonitor.startMonitoring();
+
+// var tail = spawn('tail', ['-f', path.join(config.serverPath, 'server.log')]);
+// // var used for \n scanner
+// tail.current_line = "";
 
 // web app
 if(config.web.enabled)
@@ -119,7 +136,13 @@ if(config.web.enabled)
 }
 
 // server process monitor
-var mcmonitor = new monitor(10 * 1000);
+var mcmonitor = null;
+if(config.serverMonitor.enabled)
+{
+	mcmonitor = new ServerMonitor(config.serverMonitor.interval * 1000);
+	mcmonitor.checkProcess(); // initial check to not notify yet
+	mcmonitor.startMonitoring();
+}
 
 // IRC bot
 if(config.irc.enabled)
@@ -129,24 +152,31 @@ if(config.irc.enabled)
 	    channels: config.irc.channels,
 	});
 	ircClient.addListener('join', function (channel, nick) {
-		console.log(nick + ' joined '+channel);
+		//console.log(nick + ' joined '+channel);
 		if(nick == config.irc.nick)
 		{
-			console.log('bringing irc online');
+			console.log('joined ' + channel);
 			status.ircOnline = true;
-			mcmonitor.startChecking();
 		}
 	});
 	ircClient.addListener('message', function(nick, to, text) {
 		if(text == '!users')
 		{
-			var onlineUsers = [];
-			for(var username in status.users) {
-				var user = status.users[username];
-				if(user.online)
-					onlineUsers.push(username);
-			}
-			ircClient.say(to, 'online users: ' + onlineUsers.join(', '));
+			var User = status.db.model('User');
+			User.find({'online': true}).all(function (users) {
+				var onlineUsernames = [];
+				for(var index in users)
+				{
+					var user = users[index];
+					onlineUsernames.push(user.username);
+				}
+				ircClient.say(to, 'online users: ' + onlineUsernames.join(', '));
+			});
+			
+		}
+		else if(text == '^5')
+		{
+			ircClient.say(to, nick + ': ^5');
 		}
 	});
 }
@@ -161,66 +191,6 @@ mcmonitor.on('offline', function(){
 		ircClient.say(config.irc.channels, 'Minecraft server now OFFLINE');
 });
 
-// tail callbacks, newline for each new line up til \n, matches for login/logouts
-tail.on('newline', function(line) {
-	//console.log(line);
-	var matches = null;
-	if(matches = line.match(/(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s\[INFO\]\s(\w+)\s\[(.*)\]\slogged in/))
-	{
-		var date = matches[1],
-			username = matches[2];
-		
-		// update our state to show user is online and not offline
-		status.userSignedOff(username, date);
-		
-		if(status.ircOnline)
-			ircClient.say('#grminecraft', username + ' logged on');
-		//status.updateData();
-	}
-	if(matches = line.match(/(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})\s\[INFO\]\s(\w+)\slost connection/))
-	{
-		var date = matches[1],
-			username = matches[2];
-			
-		// update user status as offline
-		status.userSignedOn(username, date);
-		
-		if(status.ircOnline)
-			ircClient.say('#grminecraft', username + ' logged out');
-		//status.updateData();
-	}
-});
-
-tail.stdout.on('data', function (data) {
-	//sys.print('stdout: ' + data);
-	data = data.toString();
-	for(var i = 0; i < data.length; i++)
-	{
-		//console.log("Checking '"+data[i]+"'");
-		if(data[i] == "\n")
-		{
-			//console.log("Got newline");
-			tail.emit('newline', tail.current_line);
-			tail.current_line = "";
-		}
-		else
-		{
-			tail.current_line += data[i];
-		}
-	}
-	//myString.match(/^\d+$/)
-	//tail.emit('newline', "test");
-});
-
-tail.stderr.on('data', function (data) {
-	sys.print('stderr: ' + data);
-});
-
-tail.on('exit', function (code) {
-	console.log('child process exited with code ' + code + '');
-	//app.close();
-});
-
 process.on('SIGINT', function () {
 	console.log('Got SIGINT. Shutting down.');
 	if(ircClient)
@@ -229,8 +199,8 @@ process.on('SIGINT', function () {
 		if(ircClient.disconnect)
 			ircClient.disconnect();
 	}
-	mcmonitor.stopChecking();
-	tail.kill();
+	mcmonitor.stopMonitoring();
+	logMonitor.stopMonitoring();
 	app.close();
 	process.exit();
 });

@@ -15,23 +15,29 @@ function ServerMonitor(interval)
 
 sys.inherits(ServerMonitor, events.EventEmitter);
 
-ServerMonitor.prototype.stopChecking = function ()
+ServerMonitor.prototype.stopMonitoring = function ()
 {
 	clearInterval(this.timer);
 	this.timer = null;
 }
-ServerMonitor.prototype.startChecking = function ()
+ServerMonitor.prototype.startMonitoring = function ()
 {
 	if(!this.timer) {
 		console.log('Server check timer started');
-		this.timer = setInterval(this.checkProcess, this.repeatInterval);
+		this.timer = setInterval(this.timerFired, this.repeatInterval);
 		this.timer.context = this;
 	}
 }
 
-ServerMonitor.prototype.checkProcess = function ()
+ServerMonitor.prototype.timerFired = function ()
 {
 	var self = this.context;
+	self.checkProcess();
+}
+
+ServerMonitor.prototype.checkProcess = function ()
+{
+	var self = this;
 	if(self.checking || !self.processCheckCommand)
 	{
 		console.log('WARNING: already checking process, skipping');
