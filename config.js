@@ -2,7 +2,7 @@
 module.exports = {
 	
 	// path to minecraft_server.jar's folder
-	serverPath: '../server',
+	serverPath: '/home/jerome/minecraft/server/',
 	
 	// whether to monitor the server process, looks for 'java' and 'minecraft' in process name & args
 	serverMonitor: {
@@ -20,9 +20,9 @@ module.exports = {
 	// irc info, will announce people connecting/disconnecting and server online/offline if enabled above
 	irc: {
 		enabled: true,
-		nick: 'jfrobot_dev',
+		nick: 'jfrobot',
 		server: 'irc.freenode.net',
-		channels: ['#minecraft_test']
+		channels: ['#grminecraft']
 	},
 	
 	// web server to provide simple information

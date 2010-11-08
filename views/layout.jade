@@ -1,6 +1,12 @@
 !!! 5
 html
-  head
-    title= title
-    link(rel='stylesheet', href='style.css')
-  body!= body
+	head
+		title= title
+		link(rel='stylesheet', href='/static/style.css')
+		script(src='/static/jquery-1.4.3.min.js')
+		script(src='/static/date.js')
+		script(type='text/javascript')
+			| jQuery(document).ready(function() {
+			|  jQuery("abbr.timeago").timeago();
+			| });
+	body!= body

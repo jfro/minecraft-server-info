@@ -120,6 +120,7 @@ if(config.web.enabled)
 {
 	var express = require('express');
 	var app = express.createServer();
+	app.set('views', __dirname + '/views');
 		app.get('/', function(req, res) {
 			var User = status.db.model('User');
 			User.find({}).all(function (users) {
