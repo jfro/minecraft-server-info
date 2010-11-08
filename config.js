@@ -2,7 +2,7 @@
 module.exports = {
 	
 	// path to minecraft_server.jar's folder
-	serverPath: '/Users/jerome/Minecraft/server',
+	serverPath: '../server',
 	
 	// whether to monitor the server process, looks for 'java' and 'minecraft' in process name & args
 	serverMonitor: {

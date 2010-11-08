@@ -66,7 +66,6 @@ ServerMonitor.prototype.checkProcess = function ()
 			{
 				self.running = true;
 				self.emit('online');
-				console.log('emitted online event');
 			}
 		}
 		else
@@ -75,7 +74,6 @@ ServerMonitor.prototype.checkProcess = function ()
 			{
 				self.running = false;
 				self.emit('offline');
-				console.log('emitted offline event');
 			}
 		}
 	});
@@ -102,7 +100,6 @@ ServerMonitor.prototype.checkProcess = function ()
 
 	psCheck.on('exit', function (code) {
 		self.checking = false;
-		console.log('Check done');
 	});
 }
 
