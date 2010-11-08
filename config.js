@@ -1,8 +1,8 @@
 // Minecraft Server Info Configuration
-module.exports.Config = {
+module.exports = {
 	
 	// path to minecraft_server.jar's folder
-	serverPath: './',
+	serverPath: '/Users/jerome/Minecraft/server',
 	
 	// where the user status will be saved
 	database: {
@@ -13,7 +13,7 @@ module.exports.Config = {
 	
 	// irc info, will announce people connecting/disconnecting
 	irc: {
-		enabled: false,
+		enabled: true,
 		nick: 'jfrobot_dev',
 		server: 'irc.freenode.net',
 		channels: ['#grminecraft']

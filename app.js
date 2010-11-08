@@ -3,7 +3,9 @@
 var sys		= require('sys'),
 	fs		= require('fs'),
 	spawn	= require('child_process').spawn,
-	config	= require('./config.js').Config;
+	config	= require('./config'),
+	path    = require('path'),
+	monitor = require('./monitor');
 
 // database support
 var mongoose = require('mongoose').Mongoose;
@@ -14,7 +16,7 @@ mongoose.model('User', require('./User').UserModel);
 var status = {
 	// stores: {username: {date: 'last login or logout date', online: true}}
 	db: null,
-	users: {},
+	//users: {},
 	// usersFile: 'users.json',
 	ircOnline: false,
 	userQueue: [],
@@ -26,14 +28,19 @@ var status = {
 		console.log('Database connected');
 	},
 	
+	setupTimeout: function() {
+		this.timeout = setTimeout(this.queueProcess, 500);
+		this.timeout.context = this;
+	},
+	
 	queueProcess: function() {
-		if(this.userQueue.length > 0)
+		var self = this.context; // since this is now the timeout object
+		if(self.userQueue.length > 0)
 		{
-			console.log('Processing next queue entry... out of ' + this.userQueue.length);
-			var userInfo = this.userQueue.shift();
-			var self = this;
-			var User = this.db.model('User');
-			this.userForUsername(userInfo['username'], function(user) {
+			//console.log('Processing next queue entry... out of ' + this.userQueue.length);
+			var userInfo = self.userQueue.shift();
+			var User = self.db.model('User');
+			self.userForUsername(userInfo['username'], function(user) {
 				if(!user)
 				{
 					console.log('Creating new user for ' + userInfo['username']);
@@ -50,15 +57,14 @@ var status = {
 					user.last_disconnect_date = userInfo['date'];
 				user.save();
 				console.log('User updated, firing queue');
-				self.timeout = setTimeout(self.queueProcess(), 500);
+				self.setupTimeout();
 			});
 		}
 		else
 		{
 			console.log('Queue empty, sleeping');
-			this.timeout = null;
+			self.timeout = null;
 		}
-		//setTimeout(this.queueProcess(), 500);
 	},
 	
 	userForUsername: function (username, callback) {
@@ -72,49 +78,23 @@ var status = {
 	userSignedOn: function (username, date) {
 		this.userQueue.push({'username': username, 'online': true, 'date': new Date(date)});
 		if(!this.timeout)
-			this.timeout = setTimeout(this.queueProcess(), 500);
+		{
+			this.setupTimeout();
+		}
 	},
 	
 	userSignedOff: function (username, date) {
 		this.userQueue.push({'username': username, 'online': false, 'date': new Date(date)});
 		if(!this.timeout)
-			this.timeout = setTimeout(this.queueProcess(), 500);
-	},
-	
-	// updates users.json
-	// updateData: function () {
-	// 	//console.log('Updating... online: ' + sys.inspect(this.online));
-	// 	//console.log(JSON.stringify(this.users));
-	// 	
-	// 	fs.writeFile(this.usersFile, JSON.stringify(this.users)+"\n", function (err) {
-	// 		if (err) throw err;
-	// 		//console.log('User status file updated');
-	// 	});
-	// },
-	// 
-	// // loads users.json
-	// loadData: function () {
-	// 	var self = this;
-	// 	fs.stat(self.usersFile, function (err, stats) {
-	// 		if(!err && stats.isFile())
-	// 		{
-	// 			console.log(self.usersFile + ' exists, loading');
-	// 			fs.readFile(self.usersFile, function (err, data) {
-	// 				if (err) throw err;
-	// 				this.users = JSON.parse(data);
-	// 				console.log('User data loaded');
-	// 			});
-	// 		}
-	// 	});
-	// }
+		{
+			this.setupTimeout();
+		}
+	}
 };
 
-// read in current
-//status.usersFile = config.dataFile;
-//status.loadData();
 status.connectDb(config.database.host, config.database.dbname);
 
-var tail = spawn('tail', ['-f', config.serverPath + 'server.log']);
+var tail = spawn('tail', ['-f', path.join(config.serverPath, 'server.log')]);
 // var used for \n scanner
 tail.current_line = "";
 
@@ -138,6 +118,9 @@ if(config.web.enabled)
 		console.log('Web server listening on port '+config.web.port)
 }
 
+// server process monitor
+var mcmonitor = new monitor(10 * 1000);
+
 // IRC bot
 if(config.irc.enabled)
 {
@@ -151,6 +134,7 @@ if(config.irc.enabled)
 		{
 			console.log('bringing irc online');
 			status.ircOnline = true;
+			mcmonitor.startChecking();
 		}
 	});
 	ircClient.addListener('message', function(nick, to, text) {
@@ -166,6 +150,16 @@ if(config.irc.enabled)
 		}
 	});
 }
+
+// server process monitor
+mcmonitor.on('online', function(){
+	if(status.ircOnline)
+		ircClient.say(config.irc.channels, 'Minecraft server now ONLINE');
+});
+mcmonitor.on('offline', function(){
+	if(status.ircOnline)
+		ircClient.say(config.irc.channels, 'Minecraft server now OFFLINE');
+});
 
 // tail callbacks, newline for each new line up til \n, matches for login/logouts
 tail.on('newline', function(line) {
@@ -223,6 +217,20 @@ tail.stderr.on('data', function (data) {
 });
 
 tail.on('exit', function (code) {
-	console.log('child process exited with code ' + code + ', shutting down');
+	console.log('child process exited with code ' + code + '');
+	//app.close();
+});
+
+process.on('SIGINT', function () {
+	console.log('Got SIGINT. Shutting down.');
+	if(ircClient)
+	{
+		ircClient.say(config.irc.channels, 'Bye guys :(');
+		if(ircClient.disconnect)
+			ircClient.disconnect();
+	}
+	mcmonitor.stopChecking();
+	tail.kill();
 	app.close();
+	process.exit();
 });

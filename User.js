@@ -5,8 +5,8 @@ exports.UserModel = {
 	properties: ['username', 'name', 'last_connect_date', 'last_disconnect_date', 'online', 'paid', 'first_seen_date', 'time_played'],
 
 	cast: {
-		online: Boolean,
-		paid: Boolean,
+		// online: Boolean,
+		// paid: Boolean,
 		last_connect_date: Date,
 		last_disconnect_date: Date
 	},
