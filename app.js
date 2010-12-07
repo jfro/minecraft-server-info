@@ -124,7 +124,7 @@ if(config.web.enabled)
 {
 	var webapp = require('./web-app');
 	webapp.start(status, config.web.port);
-	webapp.enablePostReceive('update-js.sh');
+	webapp.enablePostReceive(__dirname + '/update-js.sh');
 }
 
 // server process monitor
