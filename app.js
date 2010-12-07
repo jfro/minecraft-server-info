@@ -27,8 +27,6 @@ var status = {
 	connectDb: function (host, dbname) {
 		this.db = mongoose.connect('mongodb://'+host+'/'+dbname);
 		console.log('Database connected');
-		console.log('ENV: ' + sys.inspect(process.env));
-		// , TZ: 'America/New_York'
 	},
 	
 	setupTimeout: function() {
@@ -124,22 +122,9 @@ logMonitor.startMonitoring();
 // web app
 if(config.web.enabled)
 {
-	var express = require('express');
-	var app = express.createServer();
-	app.set('views', __dirname + '/views');
-		app.get('/', function(req, res) {
-			var User = status.db.model('User');
-			User.find({}).sort([['last_connect_date', 'descending']]).all(function (users) {
-				res.render('index.jade', {
-					locals: {
-						users: users,
-						title: 'Jfro\'s Minecraft Server'
-					}
-				});
-			});
-		});
-		app.listen(config.web.port);
-		console.log('Web server listening on port '+config.web.port)
+	var webapp = require('./web-app');
+	webapp.start(status, config.web.port);
+	webapp.enablePostReceive('update-js.sh');
 }
 
 // server process monitor
@@ -189,14 +174,17 @@ if(config.irc.enabled)
 }
 
 // server process monitor
-mcmonitor.on('online', function(){
-	if(status.ircOnline)
-		ircClient.say(config.irc.channels, 'Minecraft server now ONLINE');
-});
-mcmonitor.on('offline', function(){
-	if(status.ircOnline)
-		ircClient.say(config.irc.channels, 'Minecraft server now OFFLINE');
-});
+if(config.serverMonitor.enabled)
+{
+	mcmonitor.on('online', function(){
+		if(status.ircOnline)
+			ircClient.say(config.irc.channels, 'Minecraft server now ONLINE');
+	});
+	mcmonitor.on('offline', function(){
+		if(status.ircOnline)
+			ircClient.say(config.irc.channels, 'Minecraft server now OFFLINE');
+	});
+}
 
 process.on('SIGINT', function () {
 	console.log('Got SIGINT. Shutting down.');
