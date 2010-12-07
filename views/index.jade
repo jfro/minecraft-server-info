@@ -13,13 +13,28 @@ h1 Jfro's Minecraft Server
 					td #{onlineString}
 					td #{user.username}
 					td 
-						abbr.timeago(title=user.last_action_date) #{user.last_action_date}
+						abbr.timeago(title=user.last_action_date.toISOString()) #{user.last_action_date.toISOString()}
 	#info
 		p 
 			strong Server Address:
 			| mc2.jfro.me
-			br
-			| Server is running hey0 mod + llamacraft bucket fix
+		table(cellspacing=0, cellpadding=5, border=0)
+			tr
+				th(colspan=2) Status
+			tr.online
+				td Minecraft Server 0.2.8
+			tr.online
+				td monsters
+			tr.online
+				td hMod b131
+			tr.online
+				td WayPoints Plugin
+			tr.online
+				td CraftIRC (#grminecraft on freenode)
+			tr.online
+				td WorldEdit 2.3.1 (admins only)
+			tr.online
+				td JSApi Plugin & tunnel boring machine
 		p 
 			strong Warp Points:
 		ul
@@ -31,10 +46,51 @@ h1 Jfro's Minecraft Server
 			li Morlock - large mine
 			li CrazyCaves - large complex cave system
 			li LakeHole - giant excavation in a lake
+			li Desert - large desert northeast of spawn
+			li PortTown - Start of a town in a bay south of old spawn
+		p 
+			strong Available Commands
+		ul
+			li /help [Page] - Shows a list of commands. 7 per page.
+			li /playerlist - Shows a list of players
+			li /home - Teleports you home
+			li /sethome - Sets your home
+			li /me [Message] - * hey0 says hi!
+			li /msg [Player] [Message] - Sends a message to player
+			li /spawn - Teleports you to spawn
+			li /listwarps - Gives a list of available warps
+			li /warp [Warp] - Warps to the specified warp.
+			li /motd - Displays the MOTD
+		p 
+			strong VIP Commands (if you help pay):
+		ul
+			li /item [ID] [Amount] <Player> - Gives items
+			li /time [Time|day|night] - Changes time
+			li /wp <Player> [wp name] - Teleport to Player's wp. Only name is required.
+			li /setwp [name] - Create or update waypoint here
+			li /rmwp [name] - Delete named waypoint.
+			li /listwp <Player> - List your, or Player's waypoints
+			li /jumpto - Jumps you to top of block you're pointed at
+			li /tp <Player> - Teleports you to named player
+			li /tphere <Player> - Teleports named player to your location
+		
 		p.big-click
 			a(href='/map/') View Map
 		p
 			| Help support hosting fees:
-			br
-			a(href='https://www.wepay.com/donate/start/60899')
-				img(src='https://www.wepay.com/img/widgets/donate_with_wepay.png')
+		table
+			tr
+				td
+					a(href='https://www.wepay.com/donate/start/60899')
+						img(src='https://www.wepay.com/img/widgets/donate_with_wepay.png')
+				td Regular users in the US encouraged to 
+					a(href='https://www.wepay.com/public/view/60899') join the WePay group
+					| , I'll send bills via that in the future.
+			tr
+				td
+					form(action='https://www.paypal.com/cgi-bin/webscr', method='post')
+						input(type='hidden', name='cmd', value='_s-xclick')
+						input(type='hidden', name='hosted_button_id', value='QNNYRGU3Z22ZA')
+						input(type='image', src='https://www.paypal.com/en_US/i/btn/btn_donate_LG.gif', border='0', name='submit', alt='PayPal - The safer, easier way to pay online!')
+						img(alt='', border='0', src='https://www.paypal.com/en_US/i/scr/pixel.gif', width='1', height='1')
+				td Non-US users and those who can't use WePay can use PayPal.

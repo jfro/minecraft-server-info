@@ -27,6 +27,8 @@ var status = {
 	connectDb: function (host, dbname) {
 		this.db = mongoose.connect('mongodb://'+host+'/'+dbname);
 		console.log('Database connected');
+		console.log('ENV: ' + sys.inspect(process.env));
+		// , TZ: 'America/New_York'
 	},
 	
 	setupTimeout: function() {
@@ -57,13 +59,13 @@ var status = {
 				else
 					user.last_disconnect_date = userInfo['date'];
 				user.save();
-				console.log('User updated, firing queue');
+				//console.log('User updated, firing queue');
 				self.setupTimeout();
 			});
 		}
 		else
 		{
-			console.log('Queue empty, sleeping');
+			//console.log('Queue empty, sleeping');
 			self.timeout = null;
 		}
 	},
@@ -77,7 +79,9 @@ var status = {
 	},
 	
 	userSignedOn: function (username, date) {
-		this.userQueue.push({'username': username, 'online': true, 'date': new Date(date)});
+		var actionDate = new Date(date);
+		console.log('Sign on: ' + actionDate + ' offset: ' + actionDate.getTimezoneOffset());
+		this.userQueue.push({'username': username, 'online': true, 'date': actionDate});
 		if(!this.timeout)
 		{
 			this.setupTimeout();
@@ -85,7 +89,9 @@ var status = {
 	},
 	
 	userSignedOff: function (username, date) {
-		this.userQueue.push({'username': username, 'online': false, 'date': new Date(date)});
+		var actionDate = new Date(date);
+		console.log('Sign off: ' + actionDate + ' offset: ' + actionDate.getTimezoneOffset());
+		this.userQueue.push({'username': username, 'online': false, 'date': actionDate});
 		if(!this.timeout)
 		{
 			this.setupTimeout();
@@ -123,7 +129,7 @@ if(config.web.enabled)
 	app.set('views', __dirname + '/views');
 		app.get('/', function(req, res) {
 			var User = status.db.model('User');
-			User.find({}).all(function (users) {
+			User.find({}).sort([['last_connect_date', 'descending']]).all(function (users) {
 				res.render('index.jade', {
 					locals: {
 						users: users,
