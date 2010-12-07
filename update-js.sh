@@ -16,7 +16,7 @@ if [ $? != 0 ]; then
 	exit 1
 fi
 
-screen -S mcserver -p 0 -X stuff "`printf "say Reloading JS modules in 3s...\r"`"; sleep 3
-screen -S mcserver -p 0 -X stuff "`printf "reloadjs\r"`"
+screen -S $SCREENNAME -p 0 -X stuff "`printf "say Reloading JS modules in 3s...\r"`"; sleep 3
+screen -S $SCREENNAME -p 0 -X stuff "`printf "reloadjs\r"`"
 
 echo "JSApi modules reloaded"
