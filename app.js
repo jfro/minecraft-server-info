@@ -15,11 +15,9 @@ mongoose.model('User', require('./User').UserModel);
 
 // holds user state
 var status = {
-	// stores: {username: {date: 'last login or logout date', online: true}}
 	db: null,
-	//users: {},
-	// usersFile: 'users.json',
 	ircOnline: false,
+	ircClient: null,
 	userQueue: [],
 	timeout: null,
 	
@@ -105,13 +103,13 @@ logMonitor.on('signon', function (username, date) {
 	status.userSignedOn(username, date);
 	
 	if(status.ircOnline)
-		ircClient.say(config.irc.channels, username + ' logged on');
+		status.ircClient.say(config.irc.channels, username + ' logged on');
 });
 logMonitor.on('signoff', function (username, date) {
 	status.userSignedOff(username, date);
 	
 	if(status.ircOnline)
-		ircClient.say(config.irc.channels, username + ' logged off');
+		status.ircClient.say(config.irc.channels, username + ' logged off');
 });
 logMonitor.startMonitoring();
 
@@ -124,7 +122,13 @@ if(config.web.enabled)
 {
 	var webapp = require('./web-app');
 	webapp.start(status, config.web.port);
-	webapp.enablePostReceive(__dirname + '/update-js.sh');
+	webapp.on('jsreloaded', function() {
+		console.log('js done reloading, notifying!');
+		if(status.ircClient)
+		{
+			status.ircClient.say(config.irc.channels, '* JS modules have been reloaded');
+		}
+	});
 }
 
 // server process monitor
@@ -140,10 +144,10 @@ if(config.serverMonitor.enabled)
 if(config.irc.enabled)
 {
 	var irc = require('irc');
-	var ircClient = new irc.Client(config.irc.server, config.irc.nick, {
+	status.ircClient = new irc.Client(config.irc.server, config.irc.nick, {
 	    channels: config.irc.channels,
 	});
-	ircClient.addListener('join', function (channel, nick) {
+	status.ircClient.addListener('join', function (channel, nick) {
 		//console.log(nick + ' joined '+channel);
 		if(nick == config.irc.nick)
 		{
@@ -151,7 +155,7 @@ if(config.irc.enabled)
 			status.ircOnline = true;
 		}
 	});
-	ircClient.addListener('message', function(nick, to, text) {
+	status.ircClient.addListener('message', function(nick, to, text) {
 		if(text == '!users')
 		{
 			var User = status.db.model('User');
@@ -162,13 +166,13 @@ if(config.irc.enabled)
 					var user = users[index];
 					onlineUsernames.push(user.username);
 				}
-				ircClient.say(to, 'online users: ' + onlineUsernames.join(', '));
+				status.ircClient.say(to, 'online users: ' + onlineUsernames.join(', '));
 			});
 			
 		}
 		else if(text == '^5')
 		{
-			ircClient.say(to, nick + ': ^5');
+			status.ircClient.say(to, nick + ': ^5');
 		}
 	});
 }
@@ -178,21 +182,21 @@ if(config.serverMonitor.enabled)
 {
 	mcmonitor.on('online', function(){
 		if(status.ircOnline)
-			ircClient.say(config.irc.channels, 'Minecraft server now ONLINE');
+			status.ircClient.say(config.irc.channels, '* Minecraft server now ONLINE');
 	});
 	mcmonitor.on('offline', function(){
 		if(status.ircOnline)
-			ircClient.say(config.irc.channels, 'Minecraft server now OFFLINE');
+			status.ircClient.say(config.irc.channels, '* Minecraft server now OFFLINE');
 	});
 }
 
 process.on('SIGINT', function () {
 	console.log('Got SIGINT. Shutting down.');
-	if(ircClient)
+	if(status.ircClient)
 	{
-		ircClient.say(config.irc.channels, 'Bye guys :(');
-		if(ircClient.disconnect)
-			ircClient.disconnect();
+		status.ircClient.say(config.irc.channels, 'Bye guys :(');
+		if(status.ircClient.disconnect)
+			status.ircClient.disconnect();
 	}
 	mcmonitor.stopMonitoring();
 	logMonitor.stopMonitoring();

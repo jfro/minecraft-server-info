@@ -28,6 +28,8 @@ module.exports = {
 	// web server to provide simple information
 	web: {
 		enabled: true,
-		port: 3001
+		port: 3001,
+		title: 'Jfro\'s Minecraft Server',
+		postReceiveScript: __dirname + '/update-js.sh'
 	}
 };
