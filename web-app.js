@@ -17,14 +17,14 @@ sys.inherits(WebApp, events.EventEmitter);
 WebApp.prototype.start = function() {
 	this.app = express.createServer();
 	this.app.set('views', __dirname + '/views');
-	
+	var self = this;
 	this.app.get('/', function(req, res) {
-		var User = this.status.db.model('User');
+		var User = self.status.db.model('User');
 		User.find({}).sort([['last_connect_date', 'descending']]).all(function (users) {
 			res.render('index.jade', {
 				locals: {
 					users: users,
-					title: this.config.title
+					title: self.config.title
 				}
 			});
 		});
@@ -34,7 +34,7 @@ WebApp.prototype.start = function() {
 		this.enablePostReceive(this.config.postReceiveScript);
 	
 	this.app.listen(this.config.port);
-	console.log('Web server listening on port '+port);
+	console.log('Web server listening on port '+this.config.port);
 }
 
 // enables /post-receive url to run specified shell script

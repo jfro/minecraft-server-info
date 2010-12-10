@@ -120,7 +120,8 @@ logMonitor.startMonitoring();
 // web app
 if(config.web.enabled)
 {
-	var webapp = require('./web-app');
+	var WebApp = require('./web-app');
+	var webapp = new WebApp(status, config.web);
 	webapp.start(status, config.web.port);
 	webapp.on('jsreloaded', function() {
 		console.log('js done reloading, notifying!');
