@@ -1,17 +1,31 @@
 // TODO: split components into separate files
 
+require.paths.unshift('./lib');
+
 var sys		= require('sys'),
 	fs		= require('fs'),
 	spawn	= require('child_process').spawn,
 	config	= require('./config'),
 	path    = require('path'),
-	ServerMonitor = require('./server-monitor'),
-	LogMonitor = require('./log-monitor');
+	ServerMonitor = require('server-monitor'),
+	LogMonitor = require('log-monitor');
 
 // database support
-var mongoose = require('mongoose').Mongoose;
+var mongoose = require('mongoose');
 //	db = mongoose.connect('mongodb://localhost/minecraft');
-mongoose.model('User', require('./User').UserModel);
+// var User = new mongoose.Schema({
+//     username  :  { type: String, index: true }
+//   , name   :  { type: String }
+//   , last_connect_date   :  { type: Date }
+//   , last_disconnect_date  :  { type: Date }
+//   , online : { type: Boolean, default: false, index: true }
+//   , paid : { type: Boolean, default: false, index: true }
+//   , first_seen_date : { type: Date }
+//   , time_played : { type: Number, default: 0 }
+// });
+//mongoose.model('User', require('User'));
+var User = require('User').User;
+mongoose.model('User', User);
 
 // holds user state
 var status = {
@@ -25,8 +39,13 @@ var status = {
 	
 	// connects to MongoDB
 	connectDb: function (host, dbname) {
-		this.db = mongoose.connect('mongodb://'+host+'/'+dbname);
-		console.log('Database connected');
+		this.db = mongoose;
+		this.db.connect('mongodb://'+host+'/'+dbname, function(err) {
+			if(err) {
+				console.log('Failed to connect to mongodb: ' + err.message);
+				process.emit('SIGINT');
+			}
+		});
 	},
 	
 	setupTimeout: function() {
@@ -71,7 +90,7 @@ var status = {
 	userForUsername: function (username, callback) {
 		var User = this.db.model('User');
 		var self = this;
-		User.find({'username': username}).one(function (user) {
+		User.findOne({'username': username}, function (err, user) {
 			callback(user);
 		});
 	},
@@ -121,13 +140,12 @@ if(config.web.enabled)
 	var express = require('express');
 	var app = express.createServer();
 		app.get('/', function(req, res) {
+			console.log('Web request...');
 			var User = status.db.model('User');
-			User.find({}).all(function (users) {
+			User.find({}, function (err, users) {
 				res.render('index.jade', {
-					locals: {
 						users: users,
 						title: 'Jfro\'s Minecraft Server'
-					}
 				});
 			});
 		});
@@ -163,7 +181,7 @@ if(config.irc.enabled)
 		if(text == '!users')
 		{
 			var User = status.db.model('User');
-			User.find({'online': true}).all(function (users) {
+			User.find({'online': true}, function(err, users) {
 				var onlineUsernames = [];
 				for(var index in users)
 				{

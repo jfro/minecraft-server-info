@@ -1,0 +1,22 @@
+{
+  "author": "Jeremy Knope <jerome@buttered-cat.com> (http://jeremyknope.com/)",
+  "name": "minecraft-server-info",
+  "description": "Minecraft Server Info Web App and IRC Bot",
+  "version": "0.1.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/jfro/minecraft-server-info.git"
+  },
+  "directories": {
+    "lib": "."
+  },
+  "engines": {
+    "node": "*"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "start": "node server.js"
+  },
+  "main": "server.js"
+}
