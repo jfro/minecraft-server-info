@@ -139,11 +139,12 @@ if(config.web.enabled)
 {
 	var express = require('express');
 	var app = express.createServer();
+	app.set('view engine', 'jade');
 		app.get('/', function(req, res) {
 			console.log('Web request...');
 			var User = status.db.model('User');
 			User.find({}, function (err, users) {
-				res.render('index.jade', {
+				res.render('index', {
 						users: users,
 						title: 'Jfro\'s Minecraft Server'
 				});
