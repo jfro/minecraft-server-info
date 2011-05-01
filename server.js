@@ -5,6 +5,7 @@ require.paths.unshift('./lib');
 var sys		= require('sys'),
 	fs		= require('fs'),
 	spawn	= require('child_process').spawn,
+	exec	= require('child_process').exec,
 	config	= require('./config'),
 	path    = require('path'),
 	ServerMonitor = require('server-monitor'),
@@ -128,6 +129,14 @@ logMonitor.on('signoff', function (username, date) {
 	if(status.ircOnline)
 		ircClient.say(config.irc.channels, username + ' logged off');
 });
+// setup chat handler if forwarding is enabled
+if(config.irc.forward_chat) {
+	logMonitor.on('chat', function(date, username, message) {
+		console.log(username + ' chatted: ' + message);
+		if(status.ircOnline)
+			ircClient.say(config.irc.channels, '<'+username+'> ' + message);
+	});
+}
 logMonitor.startMonitoring();
 
 // var tail = spawn('tail', ['-f', path.join(config.serverPath, 'server.log')]);
@@ -196,6 +205,18 @@ if(config.irc.enabled)
 		else if(text == '^5')
 		{
 			ircClient.say(to, nick + ': ^5');
+		}
+		else {
+			// screen -S $SCREEN_NAME -p 0 -X stuff "`printf "say Backing up the map in 10s\r"`"; sleep 10
+			// §
+			if(config.irc.forward_chat && config.irc.screen_name) {
+				var child = exec('screen -S '+config.irc.screen_name+' -p 0 -X stuff "`printf "say [IRC] '+nick+': '+text+'\r"`"',
+					function (error, stdout, stderr) {
+						if (error !== null) {
+							console.log('exec error: ' + error);
+						}
+					});
+			}
 		}
 	});
 }

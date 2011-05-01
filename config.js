@@ -22,7 +22,10 @@ module.exports = {
 		enabled: true,
 		nick: 'jfrobot_dev',
 		server: 'irc.freenode.net',
-		channels: ['#minecraft_test']
+		channels: ['#minecraft_test'],
+		// forwarding settings
+		forward_chat: true,
+		screen_name: 'mcserver' // screen name to forward irc to minecraft server, false or null to disable
 	},
 	
 	// web server to provide simple information
