@@ -1,4 +1,3 @@
-// TODO: split components into separate files
 
 require.paths.unshift('./lib');
 
@@ -9,32 +8,21 @@ var sys		= require('sys'),
 	config	= require('./config'),
 	path    = require('path'),
 	ServerMonitor = require('server-monitor'),
-	LogMonitor = require('log-monitor');
+	LogMonitor = require('log-monitor'),
+	webapp	= null;
 
 // database support
 var mongoose = require('mongoose');
-//	db = mongoose.connect('mongodb://localhost/minecraft');
-// var User = new mongoose.Schema({
-//     username  :  { type: String, index: true }
-//   , name   :  { type: String }
-//   , last_connect_date   :  { type: Date }
-//   , last_disconnect_date  :  { type: Date }
-//   , online : { type: Boolean, default: false, index: true }
-//   , paid : { type: Boolean, default: false, index: true }
-//   , first_seen_date : { type: Date }
-//   , time_played : { type: Number, default: 0 }
-// });
-//mongoose.model('User', require('User'));
+
+// Load user model into mongoose
 var User = require('User').User;
 mongoose.model('User', User);
 
 // holds user state
 var status = {
-	// stores: {username: {date: 'last login or logout date', online: true}}
 	db: null,
-	//users: {},
-	// usersFile: 'users.json',
 	ircOnline: false,
+	ircClient: null,
 	userQueue: [],
 	timeout: null,
 	
@@ -62,28 +50,40 @@ var status = {
 			var userInfo = self.userQueue.shift();
 			var User = self.db.model('User');
 			self.userForUsername(userInfo['username'], function(user) {
+				var dirty = false;
 				if(!user)
 				{
-					console.log('Creating new user for ' + userInfo['username']);
 					user = new User();
 					user.username = userInfo['username'];
 					user.paid = false;
 					user.first_seen_date = userInfo['date'];
 					user.time_played = 0;
+					dirty = true;
 				}
 				user.online = userInfo['online'];
-				if(userInfo['online'])
+				if(userInfo['online'] && userInfo['date'] > user.last_connect_date) {
 					user.last_connect_date = userInfo['date'];
-				else
+					dirty = true;
+				}
+				else if(!userInfo['online'] && userInfo['date'] > user.last_disconnect_date) {
 					user.last_disconnect_date = userInfo['date'];
-				user.save();
-				console.log('User updated, firing queue');
+					// update time_played
+					if(user.last_connect_date && user.last_disconnect_date) {
+						var diff = (user.last_disconnect_date.getTime() - user.last_connect_date.getTime())/1000;
+						user.time_played += diff;
+					}
+					dirty = true;
+				}
+				if(dirty) {
+					user.save();
+				}
+				//console.log('User updated, firing queue');
 				self.setupTimeout();
 			});
 		}
 		else
 		{
-			console.log('Queue empty, sleeping');
+			//console.log('Queue empty, sleeping');
 			self.timeout = null;
 		}
 	},
@@ -97,7 +97,9 @@ var status = {
 	},
 	
 	userSignedOn: function (username, date) {
-		this.userQueue.push({'username': username, 'online': true, 'date': new Date(date)});
+		var actionDate = new Date(date);
+		console.log('Sign on: ' + actionDate + ' offset: ' + actionDate.getTimezoneOffset());
+		this.userQueue.push({'username': username, 'online': true, 'date': actionDate});
 		if(!this.timeout)
 		{
 			this.setupTimeout();
@@ -105,7 +107,9 @@ var status = {
 	},
 	
 	userSignedOff: function (username, date) {
-		this.userQueue.push({'username': username, 'online': false, 'date': new Date(date)});
+		var actionDate = new Date(date);
+		console.log('Sign off: ' + actionDate + ' offset: ' + actionDate.getTimezoneOffset());
+		this.userQueue.push({'username': username, 'online': false, 'date': actionDate});
 		if(!this.timeout)
 		{
 			this.setupTimeout();
@@ -121,20 +125,20 @@ logMonitor.on('signon', function (username, date) {
 	status.userSignedOn(username, date);
 	
 	if(status.ircOnline)
-		ircClient.say(config.irc.channels, username + ' logged on');
+		status.ircClient.say(config.irc.channels, username + ' logged on');
 });
 logMonitor.on('signoff', function (username, date) {
 	status.userSignedOff(username, date);
 	
 	if(status.ircOnline)
-		ircClient.say(config.irc.channels, username + ' logged off');
+		status.ircClient.say(config.irc.channels, username + ' logged off');
 });
 // setup chat handler if forwarding is enabled
 if(config.irc.forward_chat) {
 	logMonitor.on('chat', function(date, username, message) {
 		console.log(username + ' chatted: ' + message);
 		if(status.ircOnline)
-			ircClient.say(config.irc.channels, '<'+username+'> ' + message);
+			status.ircClient.say(config.irc.channels, '<'+username+'> ' + message);
 	});
 }
 logMonitor.startMonitoring();
@@ -146,21 +150,18 @@ logMonitor.startMonitoring();
 // web app
 if(config.web.enabled)
 {
-	var express = require('express');
-	var app = express.createServer();
-	app.set('view engine', 'jade');
-		app.get('/', function(req, res) {
-			console.log('Web request...');
-			var User = status.db.model('User');
-			User.find({}, function (err, users) {
-				res.render('index', {
-						users: users,
-						title: 'Jfro\'s Minecraft Server'
-				});
-			});
-		});
-		app.listen(config.web.port);
-		console.log('Web server listening on port '+config.web.port)
+	var WebApp = require('./web-app');
+	webapp = new WebApp(status, config.web);
+	webapp.start(status, config.web.port);
+	
+	// post-receive hook notification
+	webapp.on('jsreloaded', function() {
+		console.log('js done reloading, notifying!');
+		if(status.ircClient)
+		{
+			status.ircClient.say(config.irc.channels, '* JS modules have been reloaded');
+		}
+	});
 }
 
 // server process monitor
@@ -176,10 +177,10 @@ if(config.serverMonitor.enabled)
 if(config.irc.enabled)
 {
 	var irc = require('irc');
-	var ircClient = new irc.Client(config.irc.server, config.irc.nick, {
+	status.ircClient = new irc.Client(config.irc.server, config.irc.nick, {
 	    channels: config.irc.channels,
 	});
-	ircClient.addListener('join', function (channel, nick) {
+	status.ircClient.addListener('join', function (channel, nick) {
 		//console.log(nick + ' joined '+channel);
 		if(nick == config.irc.nick)
 		{
@@ -187,7 +188,7 @@ if(config.irc.enabled)
 			status.ircOnline = true;
 		}
 	});
-	ircClient.addListener('message', function(nick, to, text) {
+	status.ircClient.addListener('message', function(nick, to, text) {
 		if(text == '!users')
 		{
 			var User = status.db.model('User');
@@ -198,13 +199,13 @@ if(config.irc.enabled)
 					var user = users[index];
 					onlineUsernames.push(user.username);
 				}
-				ircClient.say(to, 'online users: ' + onlineUsernames.join(', '));
+				status.ircClient.say(to, 'online users: ' + onlineUsernames.join(', '));
 			});
 			
 		}
 		else if(text == '^5')
 		{
-			ircClient.say(to, nick + ': ^5');
+			status.ircClient.say(to, nick + ': ^5');
 		}
 		else {
 			// screen -S $SCREEN_NAME -p 0 -X stuff "`printf "say Backing up the map in 10s\r"`"; sleep 10
@@ -213,7 +214,7 @@ if(config.irc.enabled)
 				var child = exec('screen -S '+config.irc.screen_name+' -p 0 -X stuff "`printf "say [IRC] '+nick+': '+text+'\r"`"',
 					function (error, stdout, stderr) {
 						if (error !== null) {
-							console.log('exec error: ' + error);
+							console.log('chat forward error executing screen: ' + error);
 						}
 					});
 			}
@@ -222,25 +223,28 @@ if(config.irc.enabled)
 }
 
 // server process monitor
-mcmonitor.on('online', function(){
-	if(status.ircOnline)
-		ircClient.say(config.irc.channels, 'Minecraft server now ONLINE');
-});
-mcmonitor.on('offline', function(){
-	if(status.ircOnline)
-		ircClient.say(config.irc.channels, 'Minecraft server now OFFLINE');
-});
+if(config.serverMonitor.enabled)
+{
+	mcmonitor.on('online', function(){
+		if(status.ircOnline)
+			status.ircClient.say(config.irc.channels, '* Minecraft server now ONLINE');
+	});
+	mcmonitor.on('offline', function(){
+		if(status.ircOnline)
+			status.ircClient.say(config.irc.channels, '* Minecraft server now OFFLINE');
+	});
+}
 
 process.on('SIGINT', function () {
 	console.log('Got SIGINT. Shutting down.');
-	if(ircClient)
+	if(status.ircClient)
 	{
-		ircClient.say(config.irc.channels, 'Bye guys :(');
-		if(ircClient.disconnect)
-			ircClient.disconnect();
+		status.ircClient.say(config.irc.channels, 'Bye guys :(');
+		if(status.ircClient.disconnect)
+			status.ircClient.disconnect();
 	}
 	mcmonitor.stopMonitoring();
 	logMonitor.stopMonitoring();
-	app.close();
+	webapp.stop();
 	process.exit();
 });

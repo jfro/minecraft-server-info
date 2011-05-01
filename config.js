@@ -19,7 +19,7 @@ module.exports = {
 	
 	// irc info, will announce people connecting/disconnecting and server online/offline if enabled above
 	irc: {
-		enabled: true,
+		enabled: false,
 		nick: 'jfrobot_dev',
 		server: 'irc.freenode.net',
 		channels: ['#minecraft_test'],
@@ -31,6 +31,9 @@ module.exports = {
 	// web server to provide simple information
 	web: {
 		enabled: true,
-		port: 3001
+		port: 3001,
+		title: 'Untitled Minecraft Server',
+		// script that runs when a url is hit, /post-receive
+		postReceiveScript: false //__dirname + '/update-js.sh'
 	}
 };

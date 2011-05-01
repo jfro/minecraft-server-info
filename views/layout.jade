@@ -1,6 +1,13 @@
 !!! 5
 html
-  head
-    title= title
-    link(rel='stylesheet', href='style.css')
-  body!= body
+	head
+		title= title
+		link(rel='stylesheet', href='/style.css')
+		link(rel='shortcut icon', href='/favicon.png')
+		script(src='/jquery-1.4.3.min.js')
+		script(src='/date.js')
+		script(type='text/javascript')
+			jQuery(document).ready(function() {
+				jQuery("abbr.timeago").timeago();
+			});
+	body!= body
