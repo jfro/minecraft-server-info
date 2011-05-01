@@ -150,7 +150,7 @@ logMonitor.startMonitoring();
 // web app
 if(config.web.enabled)
 {
-	var WebApp = require('./web-app');
+	var WebApp = require('web-app');
 	webapp = new WebApp(status, config.web);
 	webapp.start(status, config.web.port);
 	
