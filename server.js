@@ -10,6 +10,13 @@ var cluster = cluster('./app')
   .use(cluster.cli())
   .use(cluster.repl(8888));
 
+if(config.workers)
+	cluster.set('workers', config.workers)
+if(config.user)
+	cluster.set('user', config.user);
+if(config.group)
+	cluster.set('group', config.group);
+
 if(config.web.enabled) {
 	console.log('Listening on ' + config.web.port);
 	cluster.listen(config.web.port);

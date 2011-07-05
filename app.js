@@ -61,11 +61,11 @@ var status = {
 					dirty = true;
 				}
 				user.online = userInfo['online'];
-				if(userInfo['online'] && userInfo['date'] > user.last_connect_date) {
+				if(userInfo['online'] && (!user.last_connect_date || userInfo['date'] > user.last_connect_date)) {
 					user.last_connect_date = userInfo['date'];
 					dirty = true;
 				}
-				else if(!userInfo['online'] && userInfo['date'] > user.last_disconnect_date) {
+				else if(!userInfo['online'] && (!user.last_disconnect_date || userInfo['date'] > user.last_disconnect_date)) {
 					user.last_disconnect_date = userInfo['date'];
 					// update time_played
 					if(user.last_connect_date && user.last_disconnect_date) {
@@ -98,7 +98,7 @@ var status = {
 	
 	userSignedOn: function (username, date) {
 		var actionDate = new Date(date);
-		console.log('Sign on: ' + actionDate + ' offset: ' + actionDate.getTimezoneOffset());
+		// console.log('Sign on: ' + actionDate + ' offset: ' + actionDate.getTimezoneOffset());
 		this.userQueue.push({'username': username, 'online': true, 'date': actionDate});
 		if(!this.timeout)
 		{
@@ -108,7 +108,7 @@ var status = {
 	
 	userSignedOff: function (username, date) {
 		var actionDate = new Date(date);
-		console.log('Sign off: ' + actionDate + ' offset: ' + actionDate.getTimezoneOffset());
+		// console.log('Sign off: ' + actionDate + ' offset: ' + actionDate.getTimezoneOffset());
 		this.userQueue.push({'username': username, 'online': false, 'date': actionDate});
 		if(!this.timeout)
 		{
@@ -136,7 +136,7 @@ logMonitor.on('signoff', function (username, date) {
 // setup chat handler if forwarding is enabled
 if(config.irc.forward_chat) {
 	logMonitor.on('chat', function(date, username, message) {
-		console.log(username + ' chatted: ' + message);
+		// console.log(username + ' chatted: ' + message);
 		if(status.ircOnline)
 			status.ircClient.say(config.irc.channels, '<'+username+'> ' + message);
 	});
