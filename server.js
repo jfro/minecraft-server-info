@@ -8,7 +8,7 @@ var cluster = cluster('./app')
   .use(cluster.stats())
   .use(cluster.pidfiles('pids'))
   .use(cluster.cli())
-  .use(cluster.repl(8888));
+  .use(cluster.repl(__dirname + '/repl.sock'));
 
 if(config.workers)
 	cluster.set('workers', config.workers)
