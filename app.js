@@ -121,7 +121,7 @@ status.connectDb(config.database.host, config.database.dbname);
 
 // setup log monitor
 var logMonitor = new LogMonitor(path.join(config.serverPath, 'server.log'));
-logMonitor.on('signon', function (username, date) {
+logMonitor.on('signon', function (username, date, ip) {
 	status.userSignedOn(username, date);
 	
 	if(status.ircOnline)
