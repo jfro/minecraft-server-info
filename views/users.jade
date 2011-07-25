@@ -1,0 +1,13 @@
+table(cellspacing=0, cellpadding=5, border=0)
+	tr
+		th Online
+		th User
+		th 
+	- each user in users
+		- var onlineString = user.online ? 'online' : '';
+		tr(class=onlineString)
+			td #{onlineString}
+			td #{user.username}
+			td 
+				- if(user.last_action_date)
+					abbr.timeago(title=user.last_action_date.toISOString()) #{user.last_action_date.toISOString()}

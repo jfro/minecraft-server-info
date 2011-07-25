@@ -1,20 +1,26 @@
-h1 #{title}
+script(type='text/javascript')
+	jQuery(document).ready(function() {
+		jQuery.get('/news', function(data) {
+			jQuery('#news-content').html(data);
+			jQuery("abbr.timeago").timeago();
+		});
+		jQuery.get('/users/online', function(data) {
+			jQuery('#users-content').html(data);
+			jQuery("abbr.timeago").timeago();
+		});
+	});
 
 #content
-	#user-list
-		table(cellspacing=0, cellpadding=5, border=0)
-			tr
-				th Online
-				th User
-				th 
-			- each user in users
-				- var onlineString = user.online ? 'online' : '';
-				tr(class=onlineString)
-					td #{onlineString}
-					td #{user.username}
-					td 
-						- if(user.last_action_date)
-							abbr.timeago(title=user.last_action_date.toISOString()) #{user.last_action_date.toISOString()}
+	#sidebar
+		#news-block.side-block
+			a(href='').rss-link RSS
+			h2 News
+			#news-content
+				img(src='/loader.gif')
+		#users-block.side-block
+			h2 Players
+			#users-content
+				img(src='/loader.gif')
 	#info
 		p 
 			strong Server Address:
@@ -36,29 +42,5 @@ h1 #{title}
 				td WorldEdit (admins only)
 			tr
 				td JSApi Plugin & tunnel boring machine
-		p 
-			strong Warp Points:
-		ul
-			li See /warp list for current warps
-		p 
-			strong Available Commands
-		ul
-			li /help [Page] - Shows a list of commands. 7 per page.
-			li /online - Shows a list of players
-			li /home - Teleports you home, see /home help for more commands
-			li /me [Message] - * hey0 says hi!
-			li /msg [Player] [Message] - Sends a message to player
-			li /spawn - Teleports you to spawn
-			li /motd - Displays the MOTD
-		p 
-			strong VIP Commands (if you help pay):
-		ul
-			li /item [ID] [Amount] <Player> - Gives items to yourself
-			li /time [Time|day|night] - Changes time
-			li /tp <Player> - Teleports you to named player
-			li /whois <Player> - Info about player
-			li /warp [warpname] - Warp to a warp point. See /warp help for more commands
-			li /jumpto - Jumps to the block you're pointed at
-		
-		p.big-click
-			a(href='/map/') View Map
+
+

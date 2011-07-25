@@ -42,6 +42,11 @@ module.exports = {
 		port: 3001,
 		title: 'Untitled Minecraft Server',
 		// script that runs when a url is hit, /post-receive
-		postReceiveScript: false //__dirname + '/update-js.sh'
+		postReceiveScript: false, //__dirname + '/update-js.sh'
+		news: {
+			enabled: true,
+			rss: '',
+			frontPageMaxItems: 3
+		},
 	}
 };

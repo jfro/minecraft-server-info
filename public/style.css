@@ -1,26 +1,81 @@
 /* @override 
 	http://mc.jfro.me/style.css
 	http://mc2.jfro.me/static/style.css
+	http://localhost:3000/style.css
 */
+a {
+	color: green;
+	text-decoration: underline;
+}
+a:hover {
+	color: brown;
+}
+/* @group Nav */
+
+ul#nav {
+	margin: 0;
+	padding: 0;
+	background-color: #ddd;
+	border-bottom: thin solid #aaa;
+	box-shadow: 0px 2px 5px #bbb;
+}
+#nav li {
+	list-style: none;
+	padding-left: 0;
+	display: inline-block;
+}
+#nav a {
+	display: block;
+	padding: 10px;
+	border-right: thin solid #aaa;
+	text-decoration: none;
+}
+#nav a:hover {
+	background-color: #eee;
+}
+
+/* @end */
+
+/* @group News */
+
+ul#news {
+	padding-left: 0;
+	margin: 0;
+}
+#news li {
+	list-style: none;
+	border-bottom: thin solid #ccc;
+	margin-bottom: 10px;
+}
+div.news-time {
+	background-color: #eee;
+	padding: 5px;
+}
+
+div.news-title {
+	padding: 5px;
+}
+
+/* @end */
 
 /* @group User List */
 
-#user-list {
-	width: 400px;
-	float: right;
-}
-#user-list table {
+#users-content table {
 	width: 100%;
+	border-top-left-radius: 0px;
+	border-top-right-radius: 0px;
 }
 
 table {
 	background-color: #eee;
-	border: thin solid black;
+	border: thin solid #ccc;
+	border-radius: 9px;
 }
 
 th {
 	border-bottom: thin solid #aaa;
 	border-left: thin solid #aaa;
+	background-color: #eee;
 }
 
 th:first-child {
@@ -41,14 +96,54 @@ tr.online td {
 
 /* @end */
 
+/* @group Sidebar */
+
+#sidebar {
+	float: right;
+	width: 420px;
+}
+
+.side-block {
+	border: thin solid #aaa;
+	border-radius: 10px;
+	margin-bottom: 10px;
+}
+
+.side-block h2 {
+	margin-top: 0;
+	padding-left: 10px;
+	border-bottom: thin solid #888;
+	margin-bottom: 0;
+	background-color: #ccc;
+	border-top-left-radius: 9px;
+	border-top-right-radius: 9px;
+}
+
+.side-block table {
+	border-left: none;
+	border-right: none;
+	background-color: #fff;
+	border-top: none;
+	border-bottom: none;
+}
+
+.rss-link {
+	float: right;
+	display: block;
+	margin-top: 5px;
+	margin-right: 5px;
+}
+/* @end */
+
 h1 {
-	border-bottom: thin solid #000;
+	border-bottom: thin solid #aaa;
 	padding: 10;
-	font-size: 24;
+	font-size: 20pt;
 	text-align: center;
 	background-color: #ccc;
 	margin-top: 0;
 	padding: 10px;
+	margin-bottom: 0;
 }
 
 body {

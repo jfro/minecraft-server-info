@@ -17,7 +17,8 @@
     "mongoose": "*",
     "irc": "*",
 	"jade": "*",
-	"express": "*"
+	"express": "*",
+	"cluster": "*"
   },
   "devDependencies": {},
   "scripts": {

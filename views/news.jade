@@ -1,0 +1,9 @@
+ul#news
+	- each post in news
+		li
+			div.news-title
+				a(href=post.link) #{post.title}
+			div.news-time
+				| posted 
+				abbr.timeago(title=post.published.toISOString()) #{post.published.toISOString()}
+
