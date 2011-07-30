@@ -199,7 +199,10 @@ if(config.irc.enabled)
 					var user = users[index];
 					onlineUsernames.push(user.username);
 				}
-				status.ircClient.say(to, 'online users: ' + onlineUsernames.join(', '));
+				if(onlineUsernames.length > 0)
+					status.ircClient.say(to, 'online users: ' + onlineUsernames.join(', '));
+				else
+					status.ircClient.say(to, 'nobody is online');
 			});
 			
 		}
