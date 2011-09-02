@@ -1,8 +1,3 @@
-/* @override 
-	http://mc.jfro.me/style.css
-	http://mc2.jfro.me/static/style.css
-	http://localhost:3000/style.css
-*/
 a {
 	color: green;
 	text-decoration: underline;
@@ -10,6 +5,126 @@ a {
 a:hover {
 	color: brown;
 }
+
+#address-block p {
+	margin-top: 5px;
+	margin-bottom: 5px;
+	font-size: 24px;
+	text-align: center;
+}
+
+.players-page h2 {
+	margin-top: 5px;
+}
+.players-page table {
+	width: 400px;
+}
+
+.commands-page h2 {
+	margin-top: 5px;
+}
+
+#header {
+	width: 100%;
+	height: 100px;
+}
+
+#page-content {
+	height: 100%;
+	width: 100%;
+}
+
+#mcmap
+{
+	width: 100%;
+	height: 100%;
+}
+
+/* @group Map */
+.infoWindow {
+    height: 100px;
+}
+
+.infoWindow>img {
+    width:80px;
+    float: left;
+
+}
+
+.infoWindow>p {
+    text-align: center;
+    font-family: monospace;
+}
+
+.customControl {
+    padding: 5px;
+    height: 15px;
+    color: black;
+    font-family: Arial, sans-serif;
+}
+
+.customControl > div.top {
+    font-size: 12px;
+    line-height: 160%;
+    text-align: center;
+    padding: 0px 6px;
+    
+    background-image: url('/map-adventure/control-bg.png');
+    background-repeat: repeat-x;
+    
+    border: 1px solid #A9BBDF;
+    border-radius: 2px 2px;
+    box-shadow: rgba(0, 0, 0, 0.347656) 2px 2px 3px;
+    cursor: pointer;
+}
+
+.customControl > div.top:hover {
+    border: 1px solid #678AC7;
+}
+
+.customControl > div.top-active {
+    color: white;
+    font-weight: bold;
+    padding: 0px 5px;
+    border: 1px solid #678AC7;
+    background-image: url('/map-adventure/control-bg-active.png');
+}
+
+.customControl > div.dropDown {
+    font-size: 12px;
+    background-color: white;
+    
+    border: 1px solid #A9BBDF;
+    border-radius: 2px 2px;
+    box-shadow: rgba(0, 0, 0, 0.347656) 2px 2px 3px;
+    
+    display: none;
+}
+
+.customControl > div.button {
+    border: 1px solid #000;
+    font-size: 12px;
+    background-color: #fff;
+    display: none;
+}
+
+
+#link, #coordsDiv {
+    background-color: #fff; /* fallback */
+    background-color: rgba(255,255,255,0.55);
+    border: 1px solid rgb(0, 0, 0);
+    font-size: 9pt;
+    padding-left: 2px;
+    padding-right: 2px;
+    margin-bottom: 1px;
+}
+
+#link:hover {
+    background-color: #fff; /* fallback */
+    background-color: rgba(255,255,255,0.8);
+}
+/* @end */
+
 /* @group Nav */
 
 ul#nav {
@@ -18,20 +133,35 @@ ul#nav {
 	background-color: #ddd;
 	border-bottom: thin solid #aaa;
 	box-shadow: 0px 2px 5px #bbb;
+	-moz-box-shadow: 0px 2px 5px #bbb;
+	-webkit-box-shadow: 0px 2px 5px #bbb;
+	background: -webkit-gradient(linear, left top, left bottom, from(#d1d1d1), to(#bcbcbc));
+	text-shadow: #e3e3e3 0px 1px;
 }
+
 #nav li {
 	list-style: none;
 	padding-left: 0;
 	display: inline-block;
+	font-size: 18px;
 }
+
 #nav a {
 	display: block;
 	padding: 10px;
 	border-right: thin solid #aaa;
 	text-decoration: none;
 }
+
 #nav a:hover {
-	background-color: #eee;
+	background: -webkit-gradient(linear, left top, left bottom, from(#bcbcbc), to(#d1d1d1));
+	text-shadow: #e3e3e3 0px 1px;
+}
+
+#nav a:active {
+	-webkit-box-shadow: inset 0 0 6px #333;
+	-moz-box-shadow: inset 0 0 6px #333;
+	 box-shadow: inset 0 0 6px #333;
 }
 
 /* @end */
@@ -41,11 +171,14 @@ ul#nav {
 ul#news {
 	padding-left: 0;
 	margin: 0;
+	padding-bottom: 10px;
 }
+
 #news li {
 	list-style: none;
 	border-bottom: thin solid #ccc;
-	margin-bottom: 10px;
+	margin-bottom: 0px;
+	border-bottom: 1px solid #aaa;
 }
 div.news-time {
 	background-color: #eee;
@@ -96,6 +229,22 @@ tr.online td {
 
 /* @end */
 
+/* @group Status */
+
+#status-block table {
+	width: 100%;
+}
+
+#status-block tr:last-child td:first-child {
+	border-bottom-left-radius: 9px;
+}
+
+#status-block tr:last-child td:last-child {
+	border-bottom-right-radius: 9px;
+}
+
+/* @end */
+
 /* @group Sidebar */
 
 #sidebar {
@@ -107,9 +256,11 @@ tr.online td {
 	border: thin solid #aaa;
 	border-radius: 10px;
 	margin-bottom: 10px;
+	margin-left: 15px;
 }
 
 .side-block h2 {
+	padding: 3px;
 	margin-top: 0;
 	padding-left: 10px;
 	border-bottom: thin solid #888;
@@ -117,6 +268,9 @@ tr.online td {
 	background-color: #ccc;
 	border-top-left-radius: 9px;
 	border-top-right-radius: 9px;
+	font-size: 20px;
+	background: -webkit-gradient(linear, left top, left bottom, from(#d1d1d1), to(#bcbcbc));
+	text-shadow: #e3e3e3 0px 1px;
 }
 
 .side-block table {
@@ -131,7 +285,7 @@ tr.online td {
 	float: right;
 	display: block;
 	margin-top: 5px;
-	margin-right: 5px;
+	margin-right: 8px;
 }
 /* @end */
 
@@ -140,15 +294,21 @@ h1 {
 	padding: 10;
 	font-size: 20pt;
 	text-align: center;
-	background-color: #ccc;
+	/*background-color: #ccc;*/
 	margin-top: 0;
 	padding: 10px;
 	margin-bottom: 0;
+	background: -webkit-gradient(linear, left top, left bottom, from(#d1ddd1), to(#bcccbc));
+}
+
+html {
+	height: 100%;
 }
 
 body {
 	padding: 0;
 	margin: 0;
+	height: 100%;
 }
 
 #content p:first-child {
@@ -160,5 +320,15 @@ p.big-click {
 }
 
 #content {
-	padding: 10px;
+	padding: 15px;
+	min-width: 996px;
+}
+
+div.slideshow {
+	height: 320px;
+	width: 570px;
+}
+
+#donate {
+	margin-top: 15px;
 }

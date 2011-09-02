@@ -1,46 +1,92 @@
+script(type='text/javascript', src='/js/jquery.cycle.lite.js')
+script(type='text/javascript', src='/js/jquery.elapsed.js')
 script(type='text/javascript')
-	jQuery(document).ready(function() {
-		jQuery.get('/news', function(data) {
-			jQuery('#news-content').html(data);
-			jQuery("abbr.timeago").timeago();
+	$(document).ready(function() {
+		if($('#news-content').length > 0) {
+			$.get('/news', function(data) {
+				$('#news-content').html(data);
+				$("abbr.timeago").timeago();
+			});
+		}
+		$.get('/users/online', function(data) {
+			$('#users-content').html(data);
+			$("abbr.timeago").timeago();
+			$('abbr.elapsed').time_from_seconds();
 		});
-		jQuery.get('/users/online', function(data) {
-			jQuery('#users-content').html(data);
-			jQuery("abbr.timeago").timeago();
+		$('.duration').time_from_seconds();
+		$('.slideshow').cycle({
+			fx: 'fade',
+			timeout: 8000
 		});
 	});
 
 #content
 	#sidebar
-		#news-block.side-block
-			a(href='').rss-link RSS
-			h2 News
-			#news-content
-				img(src='/loader.gif')
+		#address-block.side-block
+			h2 Server Address
+			p example.com
+		- if(config.news.enabled)
+			#news-block.side-block
+				a(href=config.news.rss).rss-link RSS
+				h2 News
+				#news-content
+					img(src='/loader.gif')
 		#users-block.side-block
 			h2 Players
 			#users-content
 				img(src='/loader.gif')
-	#info
+		#status-block.side-block
+			h2 Status
+			table(cellspacing=0, cellpadding=5, border=0)
+				tr.online
+					td Minecraft Server Beta 1.7.3
+					td online
+				tr.online
+					td Bukkit (Mods/Plugins)
+					td online
+				tr.online
+					td Inventory Protection
+					td online
+				tr.online
+					td Warps & Homes
+					td online (creative)
+				tr.online
+					td CraftIRC 
+						a(href='irc://irc.example.net/minecraft') #minecraft
+						|  on freenode
+					td online
+				tr.online
+					td Weather control
+					td online (creative)
+				tr.online
+					td Creative World
+					td online
+				tr.online
+					td Survival World
+					td online
+	#about
+		p Welcome to #{config.title}!
+		p Connect and check out some creations in the creative world, 
+			| or play survival minecraft in the adventure world.
 		p 
-			strong Server Address:
-			|  minecraft.example.com
-		table(cellspacing=0, cellpadding=5, border=0)
-			tr
-				th(colspan=2) Status
-			tr.online
-				td Minecraft Server Beta 1.5_02
-			tr.online
-				td monsters
-			tr.online
-				td CraftBukkit 0.1 snapshot
-			tr.online
-				td Warps & Homes
-			tr
-				td CraftIRC (#grminecraft on freenode)
-			tr.online
-				td WorldEdit (admins only)
-			tr
-				td JSApi Plugin & tunnel boring machine
+			strong Note: 
+			| Joining the server requires approval for build permissions.  
+			| You have good chances of being approved if you know someone already on the server.
+		ul
+			li No griefing, you will be banned
+			li Respect existing creations
+			li Helping fund the server gets you full creative abilities
+			li Just be nice :)
 
+		div.slideshow
+			img(src='/slideshow/image-1.png')
+			img(src='/slideshow/image-2.png')
 
+	#donate
+		
+		table
+			tr
+				th(colspan='2') Donate & support the server
+			tr
+				td Paypal/whatever
+				td Donation info here

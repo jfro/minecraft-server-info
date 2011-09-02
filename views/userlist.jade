@@ -3,6 +3,7 @@ table(cellspacing=0, cellpadding=5, border=0)
 		th Online
 		th User
 		th 
+		th Played
 	- each user in users
 		- var onlineString = user.online ? 'online' : '';
 		tr(class=onlineString)
@@ -11,4 +12,5 @@ table(cellspacing=0, cellpadding=5, border=0)
 			td 
 				- if(user.last_action_date)
 					abbr.timeago(title=user.last_action_date.toISOString()) #{user.last_action_date.toISOString()}
-
+			td
+				abbr.elapsed(title=user.time_played) #{user.time_played}

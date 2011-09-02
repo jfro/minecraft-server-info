@@ -120,29 +120,32 @@ var status = {
 status.connectDb(config.database.host, config.database.dbname);
 
 // setup log monitor
-var logMonitor = new LogMonitor(path.join(config.serverPath, 'server.log'));
-logMonitor.on('signon', function (username, date, ip) {
-	status.userSignedOn(username, date);
+if(config.userMonitor.enabled || config.irc.forward_chat) {
+	var logMonitor = new LogMonitor(path.join(config.serverPath, 'server.log'));
+	if(config.userMonitor.enabled) {
+		logMonitor.on('signon', function (username, date, ip) {
+			status.userSignedOn(username, date);
 	
-	if(status.ircOnline)
-		status.ircClient.say(config.irc.channels, username + ' logged on');
-});
-logMonitor.on('signoff', function (username, date) {
-	status.userSignedOff(username, date);
+			if(status.ircOnline)
+				status.ircClient.say(config.irc.channels, username + ' logged on');
+		});
+		logMonitor.on('signoff', function (username, date) {
+			status.userSignedOff(username, date);
 	
-	if(status.ircOnline)
-		status.ircClient.say(config.irc.channels, username + ' logged off');
-});
-// setup chat handler if forwarding is enabled
-if(config.irc.forward_chat) {
-	logMonitor.on('chat', function(date, username, message) {
-		// console.log(username + ' chatted: ' + message);
-		if(status.ircOnline)
-			status.ircClient.say(config.irc.channels, '<'+username+'> ' + message);
-	});
+			if(status.ircOnline)
+				status.ircClient.say(config.irc.channels, username + ' logged off');
+		});
+	}
+	// setup chat handler if forwarding is enabled
+	if(config.irc.forward_chat) {
+		logMonitor.on('chat', function(date, username, message) {
+			// console.log(username + ' chatted: ' + message);
+			if(status.ircOnline)
+				status.ircClient.say(config.irc.channels, '<'+username+'> ' + message);
+		});
+	}
+	logMonitor.startMonitoring();
 }
-logMonitor.startMonitoring();
-
 // var tail = spawn('tail', ['-f', path.join(config.serverPath, 'server.log')]);
 // // var used for \n scanner
 // tail.current_line = "";
@@ -153,15 +156,6 @@ if(config.web.enabled)
 	var WebApp = require('web-app');
 	webapp = new WebApp(status, config.web);
 	module.exports = webapp.createWebApp();
-	
-	// post-receive hook notification
-	webapp.on('jsreloaded', function() {
-		console.log('js done reloading, notifying!');
-		if(status.ircClient)
-		{
-			status.ircClient.say(config.irc.channels, '* JS modules have been reloaded');
-		}
-	});
 }
 
 // server process monitor
@@ -238,6 +232,7 @@ if(config.serverMonitor.enabled)
 	});
 }
 
+// cleanup on being killed
 function processExit() {
 	console.log('Got SIGINT or SIGQUIT. Shutting down.');
 	if(status.ircClient)
@@ -246,8 +241,10 @@ function processExit() {
 		if(status.ircClient.disconnect)
 			status.ircClient.disconnect();
 	}
-	mcmonitor.stopMonitoring();
-	logMonitor.stopMonitoring();
+	if(mcmonitor)
+		mcmonitor.stopMonitoring();
+	if(logMonitor)
+		logMonitor.stopMonitoring();
 	webapp.stop();
 	process.exit();
 }

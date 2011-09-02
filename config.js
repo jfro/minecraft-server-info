@@ -8,7 +8,14 @@ module.exports = {
 	// TODO: support > 1, if you set this higher it'll connect that many IRC bots
 	workers: 1,
 	
+	// monitors server.log for user joins/disconnects
+	// disable if using UserStats bukkit plugin
+	userMonitor: {
+		enabled: true,
+	},
+	
 	// set who to run as if desired
+	// uncomment if you're running this from upstart or similar and need to have it change user/group
 	// user: 'www-data',
 	// group: 'www-data',
 	
@@ -33,7 +40,7 @@ module.exports = {
 		channels: ['#minecraft_test'],
 		// forwarding settings
 		forward_chat: false,
-		screen_name: 'minecraft_server' // screen name to forward irc to minecraft server, false or null to disable
+		screen_name: 'minecraft_server' // screen name to forward irc to minecraft server
 	},
 	
 	// web server to provide simple information
@@ -41,10 +48,11 @@ module.exports = {
 		enabled: true,
 		port: 3001,
 		title: 'Untitled Minecraft Server',
-		// script that runs when a url is hit, /post-receive
-		postReceiveScript: false, //__dirname + '/update-js.sh'
+		googleAnalyticsID: '',
+		// base map url where a Minecraft-Overviewer is stored (edit views/map.jade to handle others)
+		baseMapURL: '', // ie 'http://example.com/map-' will become http://example.com/map-worldname
 		news: {
-			enabled: true,
+			enabled: false,
 			rss: '',
 			frontPageMaxItems: 3
 		},
